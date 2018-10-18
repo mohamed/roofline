@@ -41,8 +41,8 @@ def roofline(num_platforms, peak_performance, peak_bandwidth, intensity):
     assert isinstance(peak_performance, numpy.ndarray)
     assert isinstance(peak_bandwidth, numpy.ndarray)
     assert isinstance(intensity, numpy.ndarray)
-    assert num_platforms == peak_performance.shape[0] \
-            and num_platforms == peak_bandwidth.shape[0]
+    assert (num_platforms == peak_performance.shape[0] and
+            num_platforms == peak_bandwidth.shape[0])
 
     achievable_performance = numpy.zeros((num_platforms, len(intensity)))
     for i in range(num_platforms):
@@ -103,6 +103,30 @@ def process(hw_platforms, sw_apps, normalize=False):
     matplotlib.pyplot.show()
 
 
+def read_file(filename, row_len, csv_name):
+    """
+    Reads CSV file and returns a list of row_len-ary tuples
+    """
+    assert isinstance(row_len, int)
+    elements = list()
+    try:
+        in_file = open(filename, 'r') if filename is not None else sys.stdin
+        reader = csv.reader(in_file, dialect='excel')
+        for row in reader:
+            if len(row) != row_len:
+                print("Error: Each row in %s must be contain exactly four entries!"
+                      % csv_name, file=sys.stderr)
+                sys.exit(1)
+            element = tuple([row[0]] + [float(r) for r in row[1:]])
+            elements.append(element)
+        if filename is not None:
+            in_file.close()
+    except IOError as ex:
+        print(ex, file=sys.stderr)
+        sys.exit(1)
+    return elements
+
+
 def main():
     """
     main function
@@ -117,38 +141,11 @@ def main():
     args = parser.parse_args()
     # HW
     print("Reading HW characteristics...")
-    try:
-        hw_in_file = open(args.i, 'r') if args.i is not None else sys.stdin
-        reader = csv.reader(hw_in_file, dialect='excel')
-        for row in reader:
-            if len(row) != 4:
-                print("Error: Each row in HW CSV must be contain exactly four entries!",
-                      file=sys.stderr)
-                sys.exit(1)
-            platform = tuple([row[0], float(row[1]), float(row[2]), float(row[3])])
-            hw_platforms.append(platform)
-        if args.i is not None:
-            hw_in_file.close()
-    except IOError as ex:
-        print(ex, file=sys.stderr)
-        sys.exit(1)
+    hw_platforms = read_file(args.i, 4, "HW CSV")
     # apps
     print("Reading applications intensities...")
-    try:
-        apps_in_file = open(args.a, 'r') if args.a is not None else sys.stdin
-        reader = csv.reader(apps_in_file, dialect='excel')
-        for row in reader:
-            if len(row) != 2:
-                print("Error: Each row in apps CSV must be contain exactly two entries!",
-                      file=sys.stderr)
-                sys.exit(1)
-            app = tuple([row[0], float(row[1])])
-            apps.append(app)
-        if args.a is not None:
-            apps_in_file.close()
-    except IOError as ex:
-        print(ex, file=sys.stderr)
-        sys.exit(1)
+    apps = read_file(args.a, 2, "SW CSV")
+
     print(hw_platforms)
     print(apps)
     process(hw_platforms, apps, args.n)
