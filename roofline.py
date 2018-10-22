@@ -51,7 +51,7 @@ def roofline(num_platforms, peak_performance, peak_bandwidth, intensity):
     return achievable_performance
 
 
-def process(hw_platforms, sw_apps, normalize=False):
+def process(hw_platforms, sw_apps):
     """
     Processes the hw_platforms and sw_apps to plot the Roofline.
     """
@@ -62,44 +62,54 @@ def process(hw_platforms, sw_apps, normalize=False):
     arithmetic_intensity = numpy.logspace(START, STOP, num=N, base=2)
     # Hardware platforms
     platforms = [p[0] for p in hw_platforms]
-    peak_performance = [(p[1] * 1e3) / p[3] if normalize else p[1] for p in hw_platforms]
-    peak_bandwidth = [(p[2] * 1e3) / p[3] if normalize else p[2] for p in hw_platforms]
-    peak_performance = numpy.array(peak_performance)
-    peak_bandwidth = numpy.array(peak_bandwidth)
+
     # Compute the rooflines
-    achievable_performance = roofline(len(platforms), peak_performance,
-                                      peak_bandwidth, arithmetic_intensity)
+    achievable_performance = roofline(len(platforms),
+                                      numpy.array([p[1] for p in hw_platforms]),
+                                      numpy.array([p[2] for p in hw_platforms]),
+                                      arithmetic_intensity)
+    norm_achievable_performance = roofline(len(platforms),
+                                           numpy.array([(p[1] * 1e3) / p[3]
+                                                        for p in hw_platforms]),
+                                           numpy.array([(p[2] * 1e3) / p[3]
+                                                        for p in hw_platforms]),
+                                           arithmetic_intensity)
 
     # Apps
     apps = [a[0] for a in sw_apps]
-    apps_intensity = [a[1] for a in sw_apps]
-    apps_intensity = numpy.array(apps_intensity)
+    apps_intensity = numpy.array([a[1] for a in sw_apps])
 
     # Plot the graphs
-    _, axis = matplotlib.pyplot.subplots()
-    axis.set_xscale('log', basex=2)
-    axis.set_yscale('log', basey=2)
-    matplotlib.pyplot.xticks(arithmetic_intensity)
-    matplotlib.pyplot.yticks(numpy.logspace(1, 20, num=20, base=2))
+    fig, axes = matplotlib.pyplot.subplots(1, 2)
+    for axis in axes:
+        axis.set_xscale('log', basex=2)
+        axis.set_yscale('log', basey=2)
+        axis.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=12)
+        axis.grid(True, which='major')
 
-    axis.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=12)
-    if normalize:
-        axis.set_ylabel("Normalized Achieveable Performance (MFLOP/s/$)", fontsize=12)
-    else:
-        axis.set_ylabel("Achieveable Performance (GFLOP/s)", fontsize=12)
-    axis.set_title('Roofline Model', fontsize=14)
+    matplotlib.pyplot.setp(axes, xticks=arithmetic_intensity,
+                           yticks=numpy.logspace(1, 20, num=20, base=2))
+
+    axes[0].set_ylabel("Achieveable Performance (GFLOP/s)", fontsize=12)
+    axes[1].set_ylabel("Normalized Achieveable Performance (MFLOP/s/$)", fontsize=12)
+
+    axes[0].set_title('Roofline Model', fontsize=14)
+    axes[1].set_title('Normalized Roofline Model', fontsize=14)
+
     for idx, val in enumerate(platforms):
-        axis.plot(arithmetic_intensity, achievable_performance[idx, 0:],
-                  label=val, marker='o')
-        axis.legend()
+        axes[0].plot(arithmetic_intensity, achievable_performance[idx, 0:],
+                     label=val, marker='o')
+        axes[1].plot(arithmetic_intensity, norm_achievable_performance[idx, 0:],
+                     label=val, marker='o')
 
     color = matplotlib.pyplot.cm.rainbow(numpy.linspace(0, 1, len(apps)))
     for idx, val in enumerate(apps):
-        matplotlib.pyplot.axvline(apps_intensity[idx], label=val,
-                                  linestyle='-.', marker='x', color=color[idx])
-        axis.legend()
+        for axis in axes:
+            axis.axvline(apps_intensity[idx], label=val,
+                         linestyle='-.', marker='x', color=color[idx])
+            axis.legend()
 
-    matplotlib.pyplot.grid(True, which='major')
+    fig.tight_layout()
     matplotlib.pyplot.show()
 
 
@@ -136,8 +146,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", metavar="hw_csv", help="HW platforms CSV file", type=str)
     parser.add_argument("-a", metavar="apps_csv", help="applications CSV file", type=str)
-    parser.add_argument("-n", help="normalize performance by price", action="store_true",
-                        default=False)
     args = parser.parse_args()
     # HW
     print("Reading HW characteristics...")
@@ -148,7 +156,7 @@ def main():
 
     print(hw_platforms)
     print(apps)
-    process(hw_platforms, apps, args.n)
+    process(hw_platforms, apps)
     sys.exit(0)
 
 
