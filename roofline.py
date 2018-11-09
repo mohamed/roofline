@@ -124,8 +124,8 @@ def read_file(filename, row_len, csv_name):
         reader = csv.reader(in_file, dialect='excel')
         for row in reader:
             if len(row) != row_len:
-                print("Error: Each row in %s must be contain exactly four entries!"
-                      % csv_name, file=sys.stderr)
+                print("Error: Each row in %s must be contain exactly %d entries!"
+                      % (csv_name, row_len), file=sys.stderr)
                 sys.exit(1)
             element = tuple([row[0]] + [float(r) for r in row[1:]])
             elements.append(element)
