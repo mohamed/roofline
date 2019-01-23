@@ -76,8 +76,9 @@ def process(hw_platforms, sw_apps):
                                            arithmetic_intensity)
 
     # Apps
-    apps = [a[0] for a in sw_apps]
-    apps_intensity = numpy.array([a[1] for a in sw_apps])
+    if sw_apps != []:
+        apps = [a[0] for a in sw_apps]
+        apps_intensity = numpy.array([a[1] for a in sw_apps])
 
     # Plot the graphs
     fig, axes = matplotlib.pyplot.subplots(1, 2)
@@ -102,12 +103,13 @@ def process(hw_platforms, sw_apps):
         axes[1].plot(arithmetic_intensity, norm_achievable_performance[idx, 0:],
                      label=val, marker='o')
 
-    color = matplotlib.pyplot.cm.rainbow(numpy.linspace(0, 1, len(apps)))
-    for idx, val in enumerate(apps):
-        for axis in axes:
-            axis.axvline(apps_intensity[idx], label=val,
-                         linestyle='-.', marker='x', color=color[idx])
-            axis.legend()
+    if sw_apps != []:
+        color = matplotlib.pyplot.cm.rainbow(numpy.linspace(0, 1, len(apps)))
+        for idx, val in enumerate(apps):
+            for axis in axes:
+                axis.axvline(apps_intensity[idx], label=val,
+                             linestyle='-.', marker='x', color=color[idx])
+                axis.legend()
 
     fig.tight_layout()
     matplotlib.pyplot.show()
@@ -146,16 +148,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", metavar="hw_csv", help="HW platforms CSV file", type=str)
     parser.add_argument("-a", metavar="apps_csv", help="applications CSV file", type=str)
+    parser.add_argument("--hw-only", action='store_true', default=False)
     args = parser.parse_args()
     # HW
     print("Reading HW characteristics...")
     hw_platforms = read_file(args.i, 4, "HW CSV")
     # apps
-    print("Reading applications intensities...")
-    apps = read_file(args.a, 2, "SW CSV")
+    if args.hw_only:
+        print("Plotting only HW characteristics without any applications...")
+        apps = list()
+    else:
+        print("Reading applications intensities...")
+        apps = read_file(args.a, 2, "SW CSV")
 
     print(hw_platforms)
-    print(apps)
+    if apps != []:
+        print(apps)
     process(hw_platforms, apps)
     sys.exit(0)
 
