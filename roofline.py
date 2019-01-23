@@ -109,8 +109,9 @@ def process(hw_platforms, sw_apps):
             for axis in axes:
                 axis.axvline(apps_intensity[idx], label=val,
                              linestyle='-.', marker='x', color=color[idx])
-                axis.legend()
 
+    for axis in axes:
+        axis.legend()
     fig.tight_layout()
     matplotlib.pyplot.show()
 
