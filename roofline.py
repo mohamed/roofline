@@ -51,12 +51,13 @@ def roofline(num_platforms, peak_performance, peak_bandwidth, intensity):
     return achievable_performance
 
 
-def process(hw_platforms, sw_apps):
+def process(hw_platforms, sw_apps, xkcd):
     """
     Processes the hw_platforms and sw_apps to plot the Roofline.
     """
     assert isinstance(hw_platforms, list)
     assert isinstance(sw_apps, list)
+    assert isinstance(xkcd, bool)
 
     # arithmetic intensity
     arithmetic_intensity = numpy.logspace(START, STOP, num=N, base=2)
@@ -81,6 +82,8 @@ def process(hw_platforms, sw_apps):
         apps_intensity = numpy.array([a[1] for a in sw_apps])
 
     # Plot the graphs
+    if xkcd:
+        matplotlib.pyplot.xkcd()
     fig, axes = matplotlib.pyplot.subplots(1, 2)
     for axis in axes:
         axis.set_xscale('log', basex=2)
@@ -150,6 +153,8 @@ def main():
     parser.add_argument("-i", metavar="hw_csv", help="HW platforms CSV file", type=str)
     parser.add_argument("-a", metavar="apps_csv", help="applications CSV file", type=str)
     parser.add_argument("--hw-only", action='store_true', default=False)
+    parser.add_argument("--xkcd", action='store_true', default=False)
+
     args = parser.parse_args()
     # HW
     print("Reading HW characteristics...")
@@ -163,9 +168,10 @@ def main():
         apps = read_file(args.a, 2, "SW CSV")
 
     print(hw_platforms)
+    print("Plotting using XKCD plot style is set to %s" % (args.xkcd))
     if apps != []:
         print(apps)
-    process(hw_platforms, apps)
+    process(hw_platforms, apps, args.xkcd)
     sys.exit(0)
 
 
