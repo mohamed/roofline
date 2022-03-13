@@ -124,14 +124,16 @@ def read_file(filename, row_len, csv_name):
     Reads CSV file and returns a list of row_len-ary tuples
     """
     assert isinstance(row_len, int)
-    elements = list()
+    elements = []
     try:
-        in_file = open(filename, 'r') if filename is not None else sys.stdin
+        in_file = open(filename, 'r', encoding='utf-8') \
+                if filename is not None else sys.stdin
         reader = csv.reader(in_file, dialect='excel')
         for row in reader:
             if len(row) != row_len:
-                print("Error: Each row in %s must be contain exactly %d entries!"
-                      % (csv_name, row_len), file=sys.stderr)
+                print(f"Error: Each row in {csv_name} must be "
+                      f"contain exactly {row_len} entries!",
+                      file=sys.stderr)
                 sys.exit(1)
             element = tuple([row[0]] + [float(r) for r in row[1:]])
             elements.append(element)
@@ -147,8 +149,8 @@ def main():
     """
     main function
     """
-    hw_platforms = list()
-    apps = list()
+    hw_platforms = []
+    apps = []
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", metavar="hw_csv", help="HW platforms CSV file", type=str)
     parser.add_argument("-a", metavar="apps_csv", help="applications CSV file", type=str)
@@ -162,14 +164,14 @@ def main():
     # apps
     if args.hw_only:
         print("Plotting only HW characteristics without any applications...")
-        apps = list()
+        apps = []
     else:
         print("Reading applications intensities...")
         apps = read_file(args.a, 2, "SW CSV")
 
     print(hw_platforms)
-    print("Plotting using XKCD plot style is set to %s" % (args.xkcd))
-    if apps != []:
+    print(f"Plotting using XKCD plot style is set to {args.xkcd}")
+    if apps:
         print(apps)
     process(hw_platforms, apps, args.xkcd)
     sys.exit(0)
