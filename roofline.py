@@ -44,11 +44,11 @@ def roofline(num_platforms, peak_performance, peak_bandwidth, intensity):
     assert (num_platforms == peak_performance.shape[0] and
             num_platforms == peak_bandwidth.shape[0])
 
-    achievable_performance = numpy.zeros((num_platforms, len(intensity)))
+    achievable_perf = numpy.zeros((num_platforms, len(intensity)))
     for i in range(num_platforms):
-        achievable_performance[i:] = numpy.minimum(peak_performance[i],
-                                                   peak_bandwidth[i] * intensity)
-    return achievable_performance
+        achievable_perf[i:] = numpy.minimum(peak_performance[i],
+                                            peak_bandwidth[i] * intensity)
+    return achievable_perf
 
 
 def process(hw_platforms, sw_apps, xkcd):
@@ -65,16 +65,16 @@ def process(hw_platforms, sw_apps, xkcd):
     platforms = [p[0] for p in hw_platforms]
 
     # Compute the rooflines
-    achievable_performance = roofline(len(platforms),
-                                      numpy.array([p[1] for p in hw_platforms]),
-                                      numpy.array([p[2] for p in hw_platforms]),
-                                      arithmetic_intensity)
-    norm_achievable_performance = roofline(len(platforms),
-                                           numpy.array([(p[1] * 1e3) / p[3]
-                                                        for p in hw_platforms]),
-                                           numpy.array([(p[2] * 1e3) / p[3]
-                                                        for p in hw_platforms]),
-                                           arithmetic_intensity)
+    achievable_perf = roofline(len(platforms),
+                               numpy.array([p[1] for p in hw_platforms]),
+                               numpy.array([p[2] for p in hw_platforms]),
+                               arithmetic_intensity)
+    norm_achievable_perf = roofline(len(platforms),
+                                    numpy.array([(p[1] * 1e3) / p[3]
+                                                 for p in hw_platforms]),
+                                    numpy.array([(p[2] * 1e3) / p[3]
+                                                 for p in hw_platforms]),
+                                    arithmetic_intensity)
 
     # Apps
     if sw_apps != []:
@@ -95,15 +95,16 @@ def process(hw_platforms, sw_apps, xkcd):
                            yticks=numpy.logspace(1, 20, num=20, base=2))
 
     axes[0].set_ylabel("Achieveable Performance (GFLOP/s)", fontsize=12)
-    axes[1].set_ylabel("Normalized Achieveable Performance (MFLOP/s/$)", fontsize=12)
+    axes[1].set_ylabel("Normalized Achieveable Performance (MFLOP/s/$)",
+                       fontsize=12)
 
     axes[0].set_title('Roofline Model', fontsize=14)
     axes[1].set_title('Normalized Roofline Model', fontsize=14)
 
     for idx, val in enumerate(platforms):
-        axes[0].plot(arithmetic_intensity, achievable_performance[idx, 0:],
+        axes[0].plot(arithmetic_intensity, achievable_perf[idx, 0:],
                      label=val, marker='o')
-        axes[1].plot(arithmetic_intensity, norm_achievable_performance[idx, 0:],
+        axes[1].plot(arithmetic_intensity, norm_achievable_perf[idx, 0:],
                      label=val, marker='o')
 
     if sw_apps != []:
@@ -152,8 +153,10 @@ def main():
     hw_platforms = []
     apps = []
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", metavar="hw_csv", help="HW platforms CSV file", type=str)
-    parser.add_argument("-a", metavar="apps_csv", help="applications CSV file", type=str)
+    parser.add_argument("-i", metavar="hw_csv",
+                        help="HW platforms CSV file", type=str)
+    parser.add_argument("-a", metavar="apps_csv",
+                        help="applications CSV file", type=str)
     parser.add_argument("--hw-only", action='store_true', default=False)
     parser.add_argument("--xkcd", action='store_true', default=False)
 
