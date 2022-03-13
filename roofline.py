@@ -86,8 +86,8 @@ def process(hw_platforms, sw_apps, xkcd):
         matplotlib.pyplot.xkcd()
     fig, axes = matplotlib.pyplot.subplots(1, 2)
     for axis in axes:
-        axis.set_xscale('log', basex=2)
-        axis.set_yscale('log', basey=2)
+        axis.set_xscale('log', base=2)
+        axis.set_yscale('log', base=2)
         axis.set_xlabel('Arithmetic Intensity (FLOP/byte)', fontsize=12)
         axis.grid(True, which='major')
 
