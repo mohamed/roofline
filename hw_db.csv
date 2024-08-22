@@ -1,3 +1,4 @@
+# name, performance, bandwidth, cost in $
 NVIDIA Tesla V100,14000,900,8000
 NVIDIA Tesla P100,9300,732,6000
 Intel Xeon Gold 6140,2500,128,2500

@@ -5,12 +5,12 @@ This is a simple script to compute the Roofline Model
 (https://en.wikipedia.org/wiki/Roofline_model) of given HW platforms
 running given apps
 
-Peak bandwidth must be specified in GB/s
 Peak performance must be specified in GFLOP/s
+Peak bandwidth must be specified in GB/s
 Arithemtic intensity is specified in FLOP/byte
 Performance is specified in GFLOP/s
 
-Copyright 2018, Mohamed A. Bamakhrama
+Copyright 2018-2024, Mohamed A. Bamakhrama
 Licensed under BSD license shown in LICENSE
 """
 
@@ -66,20 +66,22 @@ def process(hw_platforms, sw_apps, xkcd):
 
     # Compute the rooflines
     achievable_perf = roofline(len(platforms),
-                               numpy.array([p[1] for p in hw_platforms]),
-                               numpy.array([p[2] for p in hw_platforms]),
+                               numpy.array([float(p[1]) for p in hw_platforms]),
+                               numpy.array([float(p[2]) for p in hw_platforms]),
                                arithmetic_intensity)
     norm_achievable_perf = roofline(len(platforms),
-                                    numpy.array([(p[1] * 1e3) / p[3]
+                                    numpy.array([(float(p[1]) * 1e3) /
+                                                 float(p[3])
                                                  for p in hw_platforms]),
-                                    numpy.array([(p[2] * 1e3) / p[3]
+                                    numpy.array([(float(p[2]) * 1e3) /
+                                                 float(p[3])
                                                  for p in hw_platforms]),
                                     arithmetic_intensity)
 
     # Apps
     if sw_apps != []:
         apps = [a[0] for a in sw_apps]
-        apps_intensity = numpy.array([a[1] for a in sw_apps])
+        apps_intensity = numpy.array([float(a[1]) for a in sw_apps])
 
     # Plot the graphs
     if xkcd:
@@ -92,7 +94,7 @@ def process(hw_platforms, sw_apps, xkcd):
         axis.grid(True, which='major')
 
     matplotlib.pyplot.setp(axes, xticks=arithmetic_intensity,
-                           yticks=numpy.logspace(1, 20, num=20, base=2))
+                           yticks=numpy.logspace(-5, 20, num=26, base=2))
 
     axes[0].set_ylabel("Achieveable Performance (GFLOP/s)", fontsize=12)
     axes[1].set_ylabel("Normalized Achieveable Performance (MFLOP/s/$)",
@@ -109,10 +111,18 @@ def process(hw_platforms, sw_apps, xkcd):
 
     if sw_apps != []:
         color = matplotlib.pyplot.cm.rainbow(numpy.linspace(0, 1, len(apps)))
-        for idx, val in enumerate(apps):
+        for idx in range(len(apps)):
             for axis in axes:
-                axis.axvline(apps_intensity[idx], label=val,
-                             linestyle='-.', marker='x', color=color[idx])
+                axis.axvline(apps_intensity[idx], label=sw_apps[idx][0],
+                             linestyle=':', color=color[idx])
+                if len(sw_apps[idx]) > 2:
+                    assert len(sw_apps[idx]) % 2 == 0
+                    for cnt in range(2, len(sw_apps[idx]), 2):
+                        label = sw_apps[idx][cnt]
+                        xx = apps_intensity[idx]
+                        yy = float(sw_apps[idx][cnt+1])
+                        axis.plot(xx, yy, 'rx')
+                        axis.annotate(f'{label}', xy=(xx, yy), textcoords='data')
 
     for axis in axes:
         axis.legend()
@@ -120,26 +130,28 @@ def process(hw_platforms, sw_apps, xkcd):
     matplotlib.pyplot.show()
 
 
-def read_file(filename, row_len, csv_name):
+def read_file(filename, row_len, csv_name, allow_variable_rows=False):
     """
     Reads CSV file and returns a list of row_len-ary tuples
     """
     assert isinstance(row_len, int)
     elements = []
     try:
-        in_file = open(filename, 'r', encoding='utf-8') \
-                if filename is not None else sys.stdin
-        reader = csv.reader(in_file, dialect='excel')
-        for row in reader:
-            if len(row) != row_len:
-                print(f"Error: Each row in {csv_name} must be "
-                      f"contain exactly {row_len} entries!",
-                      file=sys.stderr)
-                sys.exit(1)
-            element = tuple([row[0]] + [float(r) for r in row[1:]])
-            elements.append(element)
-        if filename is not None:
-            in_file.close()
+        fname = filename if filename is not None else sys.stdin
+        with open(fname, 'r', encoding='utf-8') as in_file:
+            reader = csv.reader(in_file, dialect='excel')
+            for row in reader:
+                if not row[0].startswith('#'):
+                    if not allow_variable_rows:
+                        if len(row) != row_len:
+                            print(f"Error: Each row in {csv_name} must be "
+                                  f"contain exactly {row_len} entries!",
+                                  file=sys.stderr)
+                            sys.exit(1)
+                        else:
+                            assert len(row) >= row_len
+                    element = tuple([row[0]] + [r for r in row[1:]])
+                    elements.append(element)
     except IOError as ex:
         print(ex, file=sys.stderr)
         sys.exit(1)
@@ -157,7 +169,6 @@ def main():
                         help="HW platforms CSV file", type=str)
     parser.add_argument("-a", metavar="apps_csv",
                         help="applications CSV file", type=str)
-    parser.add_argument("--hw-only", action='store_true', default=False)
     parser.add_argument("--xkcd", action='store_true', default=False)
 
     args = parser.parse_args()
@@ -165,12 +176,11 @@ def main():
     print("Reading HW characteristics...")
     hw_platforms = read_file(args.i, 4, "HW CSV")
     # apps
-    if args.hw_only:
-        print("Plotting only HW characteristics without any applications...")
-        apps = []
+    if args.a is None:
+        print("No application file given...")
     else:
-        print("Reading applications intensities...")
-        apps = read_file(args.a, 2, "SW CSV")
+        print("Reading applications parameters...")
+        apps = read_file(args.a, 2, "SW CSV", True)
 
     print(hw_platforms)
     print(f"Plotting using XKCD plot style is set to {args.xkcd}")

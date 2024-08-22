@@ -1,3 +1,8 @@
+# name, intensity, [implementation name, performance (gflops/s)]...
+matrix add/sub,0.125
 gemv,0.5
 FFT-2D (N=1024),6.25
 FFT-2D (N=4096),7.5
+gemm (N=16),10.67
+gemm (N=32),21.2
+gemm (N=64),42.6
