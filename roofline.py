@@ -113,8 +113,7 @@ def process(hw_platforms, apps, xkcd):
                 if len(val) > 2:
                     assert len(val) % 2 == 0
                     for cnt in range(2, len(val), 2):
-                        pair = tuple(apps_intensity[idx],
-                                     float(val[cnt+1]))
+                        pair = [apps_intensity[idx], float(val[cnt+1])]
                         axis.plot(pair[0], pair[1], 'rx')
                         axis.annotate(val[cnt], xy=(pair[0], pair[1]),
                                       textcoords='data')
