@@ -51,37 +51,32 @@ def roofline(num_platforms, peak_performance, peak_bandwidth, intensity):
     return achievable_perf
 
 
-def process(hw_platforms, sw_apps, xkcd):
+def process(hw_platforms, apps, xkcd):
     """
-    Processes the hw_platforms and sw_apps to plot the Roofline.
+    Processes the hw_platforms and apps to plot the Roofline.
     """
     assert isinstance(hw_platforms, list)
-    assert isinstance(sw_apps, list)
+    assert isinstance(apps, list)
     assert isinstance(xkcd, bool)
 
     # arithmetic intensity
     arithmetic_intensity = numpy.logspace(START, STOP, num=N, base=2)
-    # Hardware platforms
-    platforms = [p[0] for p in hw_platforms]
 
     # Compute the rooflines
-    achievable_perf = roofline(len(platforms),
-                               numpy.array([float(p[1]) for p in hw_platforms]),
-                               numpy.array([float(p[2]) for p in hw_platforms]),
-                               arithmetic_intensity)
-    norm_achievable_perf = roofline(len(platforms),
-                                    numpy.array([(float(p[1]) * 1e3) /
-                                                 float(p[3])
-                                                 for p in hw_platforms]),
-                                    numpy.array([(float(p[2]) * 1e3) /
-                                                 float(p[3])
-                                                 for p in hw_platforms]),
-                                    arithmetic_intensity)
+    achv_perf = roofline(len(hw_platforms),
+                         numpy.array([float(p[1]) for p in hw_platforms]),
+                         numpy.array([float(p[2]) for p in hw_platforms]),
+                         arithmetic_intensity)
+    norm_achv_perf = roofline(len(hw_platforms),
+                              numpy.array([(float(p[1])*1e3) / float(p[3])
+                                           for p in hw_platforms]),
+                              numpy.array([(float(p[2])*1e3) / float(p[3])
+                                           for p in hw_platforms]),
+                              arithmetic_intensity)
 
     # Apps
-    if sw_apps != []:
-        apps = [a[0] for a in sw_apps]
-        apps_intensity = numpy.array([float(a[1]) for a in sw_apps])
+    if apps != []:
+        apps_intensity = numpy.array([float(a[1]) for a in apps])
 
     # Plot the graphs
     if xkcd:
@@ -103,26 +98,26 @@ def process(hw_platforms, sw_apps, xkcd):
     axes[0].set_title('Roofline Model', fontsize=14)
     axes[1].set_title('Normalized Roofline Model', fontsize=14)
 
-    for idx, val in enumerate(platforms):
-        axes[0].plot(arithmetic_intensity, achievable_perf[idx, 0:],
-                     label=val, marker='o')
-        axes[1].plot(arithmetic_intensity, norm_achievable_perf[idx, 0:],
-                     label=val, marker='o')
+    for idx, val in enumerate(hw_platforms):
+        axes[0].plot(arithmetic_intensity, achv_perf[idx, 0:],
+                     label=val[0], marker='o')
+        axes[1].plot(arithmetic_intensity, norm_achv_perf[idx, 0:],
+                     label=val[0], marker='o')
 
-    if sw_apps != []:
+    if apps != []:
         color = matplotlib.pyplot.cm.rainbow(numpy.linspace(0, 1, len(apps)))
-        for idx in range(len(apps)):
+        for idx, val in enumerate(apps):
             for axis in axes:
-                axis.axvline(apps_intensity[idx], label=sw_apps[idx][0],
+                axis.axvline(apps_intensity[idx], label=val[0],
                              linestyle=':', color=color[idx])
-                if len(sw_apps[idx]) > 2:
-                    assert len(sw_apps[idx]) % 2 == 0
-                    for cnt in range(2, len(sw_apps[idx]), 2):
-                        label = sw_apps[idx][cnt]
-                        xx = apps_intensity[idx]
-                        yy = float(sw_apps[idx][cnt+1])
-                        axis.plot(xx, yy, 'rx')
-                        axis.annotate(f'{label}', xy=(xx, yy), textcoords='data')
+                if len(val) > 2:
+                    assert len(val) % 2 == 0
+                    for cnt in range(2, len(val), 2):
+                        pair = tuple(apps_intensity[idx],
+                                     float(val[cnt+1]))
+                        axis.plot(pair[0], pair[1], 'rx')
+                        axis.annotate(val[cnt], xy=(pair[0], pair[1]),
+                                      textcoords='data')
 
     for axis in axes:
         axis.legend()
@@ -150,7 +145,7 @@ def read_file(filename, row_len, csv_name, allow_variable_rows=False):
                             sys.exit(1)
                         else:
                             assert len(row) >= row_len
-                    element = tuple([row[0]] + [r for r in row[1:]])
+                    element = tuple([row[0]] + row[1:])
                     elements.append(element)
     except IOError as ex:
         print(ex, file=sys.stderr)
