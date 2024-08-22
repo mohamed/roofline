@@ -23,7 +23,7 @@ You need:
 Screenshot
 ----------
 
-![Example](img/example.svg "Example of roofline plot produced by the script")
+![Example](img/example.png "Example of roofline plot produced by the script")
 
 License
 -------
